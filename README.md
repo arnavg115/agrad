@@ -1,4 +1,4 @@
-# Agrad - Auto Grad/Arnav's Auto Grad
+# Agrad - Auto Grad
 
 A substandard autogradient implementation using only Numpy. This is an extension of my ml library and I wish to use it to implement more complex networks. It is an amalgamation of Joel Grus' and Andrej Karpathy's implementation of autograd.
 
