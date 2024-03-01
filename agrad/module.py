@@ -27,4 +27,18 @@ class Module:
         
     def state_dict(self):
         return list(self._state_dict())
-            
+
+class ModuleList(Module):
+  def __init__(self, lst):
+    self.lst = lst
+    self.id = 0
+
+  def __iter__(self):
+    return self
+
+  def __next__(self):
+    if self.id == len(self.lst):
+      self.id = 0
+      raise StopIteration
+    self.id += 1
+    return self.lst[self.id - 1]
