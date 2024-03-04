@@ -32,5 +32,3 @@ class SoftmaxCrossEnt:
         y_pred = self.softmax(self.predicted.data)
         gr = y_pred - self.target.data
         self.predicted.backward(gr)
-    
-   

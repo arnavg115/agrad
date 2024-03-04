@@ -11,6 +11,9 @@ def one_hot_func(array, size):
     one_hot[np.arange(n), array] =1
     return one_hot
 
+def randn(shape: tuple, mean, std):
+    return Tensor(np.random.normal(mean,std,shape))
+
 
 def random(shape: tuple, kaiming = False):
     if kaiming:
@@ -18,8 +21,8 @@ def random(shape: tuple, kaiming = False):
         return Tensor(dt)
     return Tensor(np.random.randn(*shape))
 
-def ones(shape: tuple):
-    return Tensor(np.ones(shape))
+def ones(shape: tuple, dtype=None):
+    return Tensor(np.ones(shape,dtype=dtype))
 
 def zeros(shape: tuple):
     return Tensor(np.zeros(shape))

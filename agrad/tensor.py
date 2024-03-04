@@ -10,18 +10,18 @@ def broadcast(t: tuple, data:np.ndarray):
             data = data.sum(axis=j,keepdims=True)
     return data
 
-
 class Tensor:
     def __init__(self, data:np.ndarray, _children=(), op: str="", req_grad = True) -> None:
         self.data = data
         self.shape = data.shape
+        self.size = data.size
         if req_grad:
             self.grad = np.zeros_like(data)
         self._backward = None
         self._prev = set(_children)
         self._op = op
         self.req_grad = req_grad
-        ()
+        
     
     def zero_grad(self):
         self.grad = np.zeros_like(self.data)
@@ -36,11 +36,15 @@ class Tensor:
         return out
 
     def __mul__(self, other:"Tensor"):
+        if not isinstance(other, Tensor):
+            other = Tensor(np.array(other), req_grad=self.req_grad)
         out = Tensor(np.multiply(self.data, other.data), (self, other), "mul")
-        
         def _backward():
-            self.grad += broadcast(self.data.shape, np.multiply(out.grad, other.data))
-            other.grad += broadcast(other.data.shape, np.multiply(out.grad, self.data))
+            if self.req_grad:
+                self.grad += broadcast(self.data.shape, np.multiply(out.grad, other.data))
+                
+            if other.req_grad:
+                other.grad += broadcast(other.data.shape, np.multiply(out.grad, self.data))
         out._backward = _backward
         return out
     
@@ -58,7 +62,8 @@ class Tensor:
     def __add__(self, other:"Tensor"):
         # self: (3,1) other: (3,3)
         # out: (3,3)
-        
+        if not isinstance(other, Tensor):
+            other = Tensor(np.array(other), req_grad=self.req_grad)
         out = Tensor(self.data + other.data, (self, other), "add", req_grad= self.req_grad or other.req_grad)
         
         def _backward():
@@ -71,7 +76,7 @@ class Tensor:
         return out
     
     def __matmul__(self,other:"Tensor"):
-        out = Tensor(self.data.dot(other.data), (self, other), "matmul", req_grad= self.req_grad or other.req_grad)
+        out = Tensor(self.data @ other.data, (self, other), "matmul", req_grad= self.req_grad or other.req_grad)
         def _backward():
             # self: (3,5) other: (5,4)
             # out: (3,4)
@@ -119,10 +124,41 @@ class Tensor:
         return out
 
     def __getitem__(self,items):
-        return Tensor(self.data[items])
+        out = Tensor(self.data[items], (self,),"index",self.req_grad)
+        def _backward():
+            if self.req_grad:
+                self.grad[items] += out.grad
+        out._backward = _backward
+        return out
+
+        return out
     
     def __truediv__(self,other):
         return self * (other ** -1)
             
             # x / a
             # a / x: - a /x^2
+
+    def transpose(self, dims=()):
+        if len(dims) > 0:
+            out = Tensor(self.data.transpose(dims),(self),"transpose",self.req_grad)
+        else:
+            out = Tensor(self.data.T,(self),"transpose",self.req_grad)
+        
+        def _backward():
+            if self.req_grad:
+                if len(dims) > 0:
+                    self.grad += out.grad.transpose(dims)
+                else:
+                    self.grad += out.grad.T
+        
+        out._backward = _backward
+        return out
+    def reshape(self, shape):
+        out = Tensor(self.data.reshape(shape), (self,),"reshape",req_grad=self.req_grad)
+        def _backward():
+            if self.req_grad:
+                self.grad += out.grad.reshape(shape)
+        
+        out._backward = _backward
+        return out
