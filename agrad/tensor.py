@@ -1,5 +1,19 @@
 import numpy as np
 
+def dim2t(dims, n_d):
+    # takes torch transpose dims and returns np axes
+    # ex: dims = (-1,-2), n_d = 3 => (1,-1,-2)
+    out = list(range(n_d))
+    out[dims[0]] = dims[1]
+    out[dims[1]] = dims[0]
+    return out
+
+def match_grad_shape(grad, shape):
+    if len(grad.shape) != len(shape):
+        diff_len = len(grad.shape) - len(shape)
+        grad = grad.sum(axis=tuple(range(diff_len)))
+    return grad
+
 def broadcast(t: tuple, data:np.ndarray):
     nd = data.ndim - len(t)
     for i in range(nd):
@@ -80,10 +94,11 @@ class Tensor:
         def _backward():
             # self: (3,5) other: (5,4)
             # out: (3,4)
+            # funny stuff here mostly to deal with batch dimension
             if self.req_grad:
-                self.grad += out.grad.dot(other.data.T)
+                self.grad += match_grad_shape(out.grad @ other.data.transpose(dim2t((-1,-2),len(other.data.shape))), self.shape)
             if other.req_grad:
-                other.grad += self.data.T.dot(out.grad)
+                other.grad += match_grad_shape(self.data.transpose(dim2t((-1,-2), len(self.data.shape))) @ out.grad, other.shape)
         out._backward = _backward
         return out
 
@@ -158,7 +173,7 @@ class Tensor:
         out = Tensor(self.data.reshape(shape), (self,),"reshape",req_grad=self.req_grad)
         def _backward():
             if self.req_grad:
-                self.grad += out.grad.reshape(shape)
+                self.grad += out.grad.reshape(self.data.shape)
         
         out._backward = _backward
         return out

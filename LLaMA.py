@@ -6,10 +6,10 @@ import agrad.functional as F
 import agrad.nn as nn
 from agrad import Module, Tensor, ModuleList
 from agrad.nn.norm import rmsnorm
-from agrad.utils import ones
+from agrad.utils import ones, random
 
 params = {
-    "dim": 1600,
+    "dim": 256,
     "n_layers": 4,
     "n_heads": 2,
     "vocab_size": 32000,
@@ -133,3 +133,5 @@ class llama(Module):
     return x
 
 model = llama(params)
+yhat = model(ones((1,1), dtype=int))
+yhat.backward(np.ones_like(yhat, dtype=float))
