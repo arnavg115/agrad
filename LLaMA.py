@@ -22,7 +22,7 @@ params = {
 
 class RoPE(Module):
     def __init__(self, params):
-        self.dim = params["dim"] // params["n_heads"] 
+        self.dim = params["dim"] // params["n_heads"]
         self.ctx_len = params["ctx_len"]
 
     @staticmethod
@@ -53,10 +53,10 @@ class Attention(Module):
         self.n_heads = params["n_heads"]
         self.eps = params["eps"]
         self.ctx_len = params["ctx_len"]
-        self.query = nn.Linear(params["dim"], params["dim"],mean=0.0, std=0.02)
-        self.key = nn.Linear(params["dim"], params["dim"],mean=0.0, std=0.02)
-        self.value = nn.Linear(params["dim"], params["dim"] ,mean=0.0, std=0.02)
-        self.o = nn.Linear(params["dim"], params["dim"],mean=0.0, std=0.02)
+        self.query = nn.Linear(params["dim"], params["dim"], mean=0.0, std=0.02)
+        self.key = nn.Linear(params["dim"], params["dim"], mean=0.0, std=0.02)
+        self.value = nn.Linear(params["dim"], params["dim"], mean=0.0, std=0.02)
+        self.o = nn.Linear(params["dim"], params["dim"], mean=0.0, std=0.02)
         self.rope = RoPE(params)
 
     def forward(self, x, mask, c, s):
@@ -81,7 +81,7 @@ class MLP(Module):
         self.hidden = params["hidden_dim"]
         self.w1 = nn.Linear(self.dim, self.hidden, mean=0.0, std=0.01)  # gate_proj
         self.w2 = nn.Linear(self.hidden, self.dim, mean=0.0, std=0.01)  # down_proj
-        self.w3 = nn.Linear(self.dim, self.hidden,mean=0.0, std=0.01)  # up_proj
+        self.w3 = nn.Linear(self.dim, self.hidden, mean=0.0, std=0.01)  # up_proj
 
     def forward(self, x):
         return self.w2(F.silu(self.w1(x)) * self.w3(x))
@@ -102,36 +102,50 @@ class TransformerBlock(Module):
 
 
 class llama(Module):
-  def __init__(self, params):
+    def __init__(self, params):
 
-    self.w_embed = nn.Embedding(params["vocab_size"], params["dim"],mean=0.0, std=0.02)
-    self.layers = ModuleList([TransformerBlock(params) for _ in range(params["n_layers"])])
-    self.norm = rmsnorm(params["dim"])
-    self.lm_head = nn.Linear(params["dim"], params["vocab_size"], bias = False)
-    self.c,self.s = RoPE.build_cs_cache(params["dim"]//params["n_heads"], params["ctx_len"])
-    self.mask = Tensor((-1/np.tril(np.ones((params["ctx_len"],params["ctx_len"]))) + 1)[np.newaxis,np.newaxis],req_grad=False)
-    self.params = params
+        self.w_embed = nn.Embedding(
+            params["vocab_size"], params["dim"], mean=0.0, std=0.02
+        )
+        self.layers = ModuleList(
+            [TransformerBlock(params) for _ in range(params["n_layers"])]
+        )
+        self.norm = rmsnorm(params["dim"])
+        self.lm_head = nn.Linear(params["dim"], params["vocab_size"], bias=False)
+        self.c, self.s = RoPE.build_cs_cache(
+            params["dim"] // params["n_heads"], params["ctx_len"]
+        )
+        self.mask = Tensor(
+            (-1 / np.tril(np.ones((params["ctx_len"], params["ctx_len"]))) + 1)[
+                np.newaxis, np.newaxis
+            ],
+            req_grad=False,
+        )
+        self.params = params
 
-  def forward(self, x):
-    y = self.w_embed(x)
-    for layer in self.layers:
-      y = layer(y,self.mask, self.c, self.s)
-    y = self.norm(y)
-    return self.lm_head(y)
+    def forward(self, x):
+        y = self.w_embed(x)
+        for layer in self.layers:
+            y = layer(y, self.mask, self.c, self.s)
+        y = self.norm(y)
+        return self.lm_head(y)
 
-  def generate(self, x, max_new = 10):
-    for _ in range(max_new):
-      if x.shape[1] < params["ctx_len"]:
-        x_c = x
-      else:
-        x_c = x[:,-params["ctx_len"]:]
-      p = self.forward(x_c)
-      new_tok = p[:,-1,:]
-      probs = F.softmax(new_tok)
-      nxt = np.argmax(np.random.multinomial(1,probs[0]), keepdims=True)[np.newaxis]
-      x = np.concatenate((x, nxt), axis=-1)
-    return x
+    def generate(self, x, max_new=10):
+        for _ in range(max_new):
+            if x.shape[1] < params["ctx_len"]:
+                x_c = x
+            else:
+                x_c = x[:, -params["ctx_len"] :]
+            p = self.forward(x_c)
+            new_tok = p[:, -1, :]
+            probs = F.softmax(new_tok)
+            nxt = np.argmax(np.random.multinomial(1, probs[0]), keepdims=True)[
+                np.newaxis
+            ]
+            x = np.concatenate((x, nxt), axis=-1)
+        return x
+
 
 model = llama(params)
-yhat = model(ones((1,1), dtype=int))
+yhat = model(ones((1, 1), dtype=int))
 yhat.backward(np.ones_like(yhat, dtype=float))
