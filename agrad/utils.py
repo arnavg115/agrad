@@ -71,7 +71,7 @@ def gather(t: "Tensor", inds: np.ndarray, axis: int):
     out = Tensor(np.take_along_axis(t.data, inds, axis), (t,), "gather")
 
     def _backward():
-        res = np.zeros_like(out.data)
+        res = np.zeros_like(t.data)
         np.put_along_axis(res, inds, out.grad, axis)
         t.grad += res
 
