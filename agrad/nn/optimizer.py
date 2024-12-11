@@ -52,13 +52,14 @@ class rmsprop(optim):
 
 
 class adam(optim):
-    def __init__(self, lr: float = 0.01, beta1=0.9, beta2=0.9, epsilon=1e-8) -> None:
+    def __init__(self, lr: float = 0.01, beta1=0.9, beta2=0.9, epsilon=1e-8, weight_decay = 0) -> None:
         super().__init__(lr)
         self.beta1 = beta1
         self.beta2 = beta2
         self.s_curr = {}
         self.v_curr = {}
         self.epsilon = epsilon
+        self.weight_decay = weight_decay
 
     def step(self, module: Module):
         for i in module.state_dict():
@@ -66,6 +67,37 @@ class adam(optim):
                 self.s_curr[i[0]] = 0
             if self.v_curr.get(i[0]) is None:
                 self.v_curr[i[0]] = 0
+            
+            if self.weight_decay != 0:
+                i[1].grad = i[1].grad + self.weight_decay * i[1].data
+            self.v_curr[i[0]] = (
+                self.beta2 * self.v_curr[i[0]] + (1 - self.beta2) * i[1].grad
+            )
+            self.s_curr[i[0]] = self.beta1 * self.s_curr[i[0]] + (
+                1 - self.beta1
+            ) * np.power(i[1].grad, 2)
+            d = self.v_curr[i[0]] / np.sqrt(self.s_curr[i[0]] + self.epsilon)
+            i[1].data -= d * self.lr
+
+class adamw(optim):
+    def __init__(self, lr: float = 0.01, beta1=0.9, beta2=0.9, epsilon=1e-8, weight_decay=0.01) -> None:
+        super().__init__(lr)
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.s_curr = {}
+        self.v_curr = {}
+        self.epsilon = epsilon
+        self.weight_decay = weight_decay
+
+    def step(self, module: Module):
+        for i in module.state_dict():
+            if self.s_curr.get(i[0]) is None:
+                self.s_curr[i[0]] = 0
+            if self.v_curr.get(i[0]) is None:
+                self.v_curr[i[0]] = 0
+            
+            i[1].data = i[1].data - self.lr * self.weight_decay * i[1].data
+
             self.v_curr[i[0]] = (
                 self.beta2 * self.v_curr[i[0]] + (1 - self.beta2) * i[1].grad
             )
