@@ -1,21 +1,29 @@
 from typing import Any
 from ..tensor import Tensor
+from ..utils import mean, exp, log
 import numpy as np
 
 
 class MSE:
-    def __call__(self, predicted: Tensor, target: Tensor) -> Tensor:
+    def __call__(self, predicted: Tensor, target: Tensor, reduction = "sum") -> Tensor:
         self.predicted = predicted
-        # print(predicted.shape)
-        # print(target.shape)
         self.target = target
         err = predicted - target
-        return (err * err).sum().data
+        if reduction == "sum":
+            return (err * err).sum()
+        return mean((err * err))
 
-    def backward(self):
-        gr = 2 * (self.predicted.data - self.target.data)
-        self.predicted.backward(gr)
 
+class _SoftmaxCrossEnt:
+    def softmax(self, x:"Tensor"):
+        exp_x = exp(x)
+        return mean(exp_x, axis=1, keepdims=True)
+    
+    def __call__(self, predicted:Tensor, target:Tensor, reduction = "mean"):
+        y_pred = self.softmax(predicted)
+        loss = -1 * (target * log(y_pred)).sum(axis=0)
+        return mean(loss)
+        
 
 class SoftmaxCrossEnt:
     def softmax(self, x):

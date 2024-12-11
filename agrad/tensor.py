@@ -143,7 +143,7 @@ class Tensor:
         out._backward = _backward
         return out
 
-    def backward(self, grad: np.ndarray):
+    def backward(self, grad: np.ndarray = None):
         if not self.req_grad:
             raise NotImplementedError
         netw: list[Tensor] = []
@@ -157,6 +157,10 @@ class Tensor:
                 netw.append(t)
 
         build(self)
+        if self.data.size == 1:
+            grad = np.ones_like(self.data)
+        assert grad != None, "No grad passed in / could be implicitly calculated"
+        
         self.grad += grad
         for l in reversed(netw):
             if l._backward is not None:

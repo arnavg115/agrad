@@ -77,3 +77,30 @@ def gather(t: "Tensor", inds: np.ndarray, axis: int):
 
     out._backward = _backward
     return out
+
+
+def mean(t: "Tensor", axis = None, keepdims = False):
+
+    if axis is None:
+        return t.sum(keepdims=keepdims) / t.size
+    
+    return t.sum(axis=axis, keepdims=keepdims) / t.shape[axis]
+
+
+def exp(t: "Tensor"):
+    out = Tensor(np.exp(t.data), (t,), "exp", t.req_grad)
+
+    def _backward():
+        t.grad += np.exp(t.data)
+    
+    out._backward = _backward
+    return out
+
+def log(t: "Tensor"):
+    out = Tensor(np.log(t.data), (t,),"log", t.req_grad)
+    
+    def _backward():
+        t.grad += 1 / t.data
+    
+    out._backward = _backward
+    return out
