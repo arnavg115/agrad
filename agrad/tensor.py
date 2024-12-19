@@ -227,3 +227,13 @@ class Tensor:
 
         out._backward = _backward
         return out
+
+    def astype(self, **kwargs):
+        self.data = self.data.astype(**kwargs)
+
+    @property
+    def dtype(self):
+        return self.data.dtype
+    
+    def item(self):
+        return self.data.item()
