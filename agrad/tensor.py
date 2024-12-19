@@ -36,14 +36,14 @@ class Tensor:
         self.shape = data.shape
         self.size = data.size
         if req_grad:
-            self.grad = np.zeros_like(data)
+            self.grad = np.zeros_like(data).astype(np.float64)
         self._backward = None
         self._prev = set(_parent)
         self._op = op
         self.req_grad = req_grad
 
     def zero_grad(self):
-        self.grad = np.zeros_like(self.data)
+        self.grad = np.zeros_like(self.data).astype(np.float64)
 
     def __neg__(self):
         out = Tensor(-1 * self.data, (self,), "neg", req_grad=self.req_grad)
