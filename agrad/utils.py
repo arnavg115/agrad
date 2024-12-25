@@ -1,9 +1,13 @@
 import math
+from typing_extensions import Union
 import numpy as np
 import pickle
 
+from typing import List
+
 from agrad.module import Module
 from .tensor import Tensor
+from .functional import stack as fstack
 
 
 def one_hot_func(array, size):
@@ -60,7 +64,7 @@ def load_state_dict(file_name: str, module: Module):
     return module
 
 
-def arange(start: int, stop: int, step: int, dtype=None, shape: tuple = None):
+def arange(start: int, stop: int, step: int, dtype=None, shape: "Union[tuple, None]" = None):
     arr = np.arange(start=start, stop=stop, step=step, dtype=dtype)
     if shape != None:
         arr = arr.reshape(shape)
@@ -83,7 +87,7 @@ def mean(t: "Tensor", axis = None, keepdims = False):
 
     if axis is None:
         return t.sum(keepdims=keepdims) / t.size
-    
+
     return t.sum(axis=axis, keepdims=keepdims) / t.shape[axis]
 
 
@@ -92,15 +96,23 @@ def exp(t: "Tensor"):
 
     def _backward():
         t.grad += np.exp(t.data)
-    
+
     out._backward = _backward
     return out
 
 def log(t: "Tensor"):
     out = Tensor(np.log(t.data), (t,),"log", t.req_grad)
-    
+
     def _backward():
         t.grad += 1 / t.data
-    
+
     out._backward = _backward
     return out
+
+
+def stack(l1: "List[Tensor]", axis = 0):
+    return fstack(l1, axis)
+
+
+def dot(t1: "Tensor", t2: "Tensor"):
+    return t1.dot(t2)

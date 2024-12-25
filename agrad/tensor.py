@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Callable, Union
 
 
 def dim2t(dims, n_d):
@@ -37,7 +38,7 @@ class Tensor:
         self.size = data.size
         if req_grad:
             self.grad = np.zeros_like(data).astype(np.float64)
-        self._backward = None
+        self._backward: "Union[Callable[[],], None]" = None
         self._prev = set(_parent)
         self._op = op
         self.req_grad = req_grad
@@ -143,7 +144,7 @@ class Tensor:
         out._backward = _backward
         return out
 
-    def backward(self, grad: np.ndarray = None):
+    def backward(self, grad: "Union[np.ndarray, None]" = None):
         if not self.req_grad:
             raise NotImplementedError
         netw: list[Tensor] = []
@@ -160,7 +161,7 @@ class Tensor:
         if self.data.size == 1:
             grad = np.ones_like(self.data)
         assert grad != None, "No grad passed in / could be implicitly calculated"
-        
+
         self.grad += grad
         for l in reversed(netw):
             if l._backward is not None:
@@ -234,6 +235,14 @@ class Tensor:
     @property
     def dtype(self):
         return self.data.dtype
-    
+
     def item(self):
         return self.data.item()
+
+    @property
+    def T(self):
+        return self.transpose()
+
+
+    def dot(self, other: "Tensor"):
+        return self.__matmul__(other)

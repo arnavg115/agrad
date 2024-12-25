@@ -82,7 +82,7 @@ def mean(t: "Tensor", axis=None, keepdims=True):
     return t.sum() / t.size
 
 
-def stack(l: List["Tensor"], axis=None):
+def stack(l: List["Tensor"], axis=0):
     data = np.stack([ls.data for ls in l], axis)
     out = Tensor(data, tuple(l), "stack", l[0].req_grad)
 
