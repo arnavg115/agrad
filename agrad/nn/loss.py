@@ -1,6 +1,7 @@
 from typing import Any
 from ..tensor import Tensor
-from ..utils import mean, exp, log
+from ..utils import mean
+from ..functional import log, exp
 import numpy as np
 
 
