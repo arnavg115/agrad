@@ -246,3 +246,7 @@ class Tensor:
 
     def dot(self, other: "Tensor"):
         return self.__matmul__(other)
+
+
+    def detach(self):
+        return Tensor(self.data.copy(), (), "detach", req_grad=False)
