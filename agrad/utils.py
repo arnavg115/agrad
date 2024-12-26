@@ -91,25 +91,6 @@ def mean(t: "Tensor", axis = None, keepdims = False):
     return t.sum(axis=axis, keepdims=keepdims) / t.shape[axis]
 
 
-def exp(t: "Tensor"):
-    out = Tensor(np.exp(t.data), (t,), "exp", t.req_grad)
-
-    def _backward():
-        t.grad += np.exp(t.data)
-
-    out._backward = _backward
-    return out
-
-def log(t: "Tensor"):
-    out = Tensor(np.log(t.data), (t,),"log", t.req_grad)
-
-    def _backward():
-        t.grad += 1 / t.data
-
-    out._backward = _backward
-    return out
-
-
 def stack(l1: "List[Tensor]", axis = 0):
     return fstack(l1, axis)
 
